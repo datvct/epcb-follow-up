@@ -188,6 +188,7 @@ function openUpdateModal(projectId) {
   form.finalStatus.value = row.finalStatus || '';
   form.nextFollowUpDate.value = row.nextFollowUpDate || '';
   form.note.value = row.note || '';
+  form.productFile.value = row.productFile || '';
   document.getElementById('update-followup-count').textContent = row.followUp || 0;
   document.getElementById('update-cadence-hint').textContent = '';
   applyReasonRequiredHint(row.finalStatus || row.currentStatus, document.getElementById('update-note-label'), document.getElementById('update-note'));
