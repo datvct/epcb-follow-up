@@ -107,6 +107,7 @@ function applyListFilters() {
   let rows = filterByPeriod(ALL_PROJECTS, period);
   if (q) rows = rows.filter((r) =>
     (r.customerName || '').toLowerCase().includes(q) ||
+    (getCompanyNameByCustomer_(r.customerName) || '').toLowerCase().includes(q) ||
     (r.productFile || '').toLowerCase().includes(q)
   );
   if (qp) rows = rows.filter((r) =>
@@ -141,7 +142,7 @@ function renderProjectTable(rows) {
         <td>
           <div class="d-flex align-items-center gap-2">
             <div class="min-w-0 flex-grow-1">
-              <div class="fw-semibold text-truncate" title="${r.customerName || ''}">${r.customerName || ''}</div>
+              ${buildCustomerNameLinesHtml_(r.customerName)}
               <div class="text-muted small text-truncate">${r.customerType || ''}</div>
             </div>
             ${fileLinkHtml}
@@ -431,58 +432,197 @@ document.getElementById('btn-delete-project').addEventListener('click', async ()
 // TOM SELECT: SELECT SEARCH KHÁCH HÀNG CŨ
 // ============================================================
 let tomSelectInstance = null;
+let companyTomSelect = null;
+// Cờ chống lặp vô hạn: khi 1 trong 2 ô (Tên công ty / Tên khách hàng) đang tự
+// điền giá trị cho ô còn lại, tạm tắt xử lý onChange của ô kia để tránh 2 ô
+// gọi qua gọi lại nhau liên tục.
+let _isSyncingCustomerCompany = false;
 
+// Điền SĐT/Email/Ghi chú theo đúng khách hàng đã chọn (dùng chung cho cả 2
+// chiều: chọn từ ô Tên khách hàng, hoặc tự động chọn khi công ty chỉ có 1
+// khách liên hệ duy nhất).
+function fillCustomerContactFields_(found) {
+  const noteBox = document.getElementById('customer-note-box');
+  const noteText = document.getElementById('customer-note-text');
+  const phoneInput = document.querySelector('#form-add-project [name="customerPhone"]');
+  const emailInput = document.querySelector('#form-add-project [name="customerEmail"]');
+  if (phoneInput) phoneInput.value = found.phone || '';
+  if (emailInput) emailInput.value = found.email || '';
+  if (noteBox && noteText) {
+    if (found.note && found.note.trim()) {
+      noteText.textContent = found.note;
+      noteBox.style.display = 'block';
+    } else {
+      noteBox.style.display = 'none';
+    }
+  }
+}
+
+// Chọn đúng 1 khách hàng cụ thể + đồng bộ 2 chiều sang ô Tên công ty (nếu
+// khách lẻ không có công ty thì để trống ô công ty).
+function selectCustomerAndFill_(found) {
+  _isSyncingCustomerCompany = true;
+  try {
+    if (tomSelectInstance) {
+      restoreFullCustomerOptions_(false);
+      tomSelectInstance.setValue(found.customerName, true); // silent, không bắn lại onChange
+    }
+    if (companyTomSelect) {
+      const companyVal = (found.companyName || '').trim();
+      if (companyVal) {
+        if (!companyTomSelect.options[companyVal]) companyTomSelect.addOption({ value: companyVal, text: companyVal });
+        companyTomSelect.setValue(companyVal, true);
+      } else {
+        companyTomSelect.clear(true);
+      }
+    }
+    fillCustomerContactFields_(found);
+  } finally {
+    _isSyncingCustomerCompany = false;
+  }
+}
+
+// Thu hẹp danh sách ô Tên khách hàng xuống chỉ còn các khách của 1 công ty
+// (dùng khi công ty vừa chọn có NHIỀU khách liên hệ khác nhau).
+function setCustomerOptions_(customers) {
+  if (!tomSelectInstance) return;
+  tomSelectInstance.clear(true);
+  tomSelectInstance.clearOptions();
+  customers.forEach((c) => {
+    tomSelectInstance.addOption({ value: c.customerName, customerName: c.customerName, companyName: c.companyName || '' });
+  });
+  tomSelectInstance.refreshOptions(false);
+}
+
+// Trả lại đầy đủ danh sách khách hàng cho ô Tên khách hàng (bỏ lọc theo công ty).
+function restoreFullCustomerOptions_(keepValue) {
+  if (!tomSelectInstance) return;
+  const current = keepValue ? tomSelectInstance.getValue() : null;
+  tomSelectInstance.clearOptions();
+  (ALL_CUSTOMERS || []).filter((c) => c.customerName).forEach((c) => {
+    tomSelectInstance.addOption({ value: c.customerName, customerName: c.customerName, companyName: c.companyName || '' });
+  });
+  tomSelectInstance.refreshOptions(false);
+  if (current) tomSelectInstance.setValue(current, true);
+}
+
+// TomSelect ô "Tên công ty" — đặt TRƯỚC ô chọn khách hàng theo yêu cầu:
+// - Khách cũ: chọn/gõ đúng 1 công ty đã có -> nếu công ty đó chỉ có ĐÚNG 1
+//   khách liên hệ, tự điền luôn Tên khách hàng + SĐT/Email/Ghi chú. Nếu công
+//   ty có NHIỀU khách liên hệ, thu hẹp danh sách ô Tên khách hàng xuống chỉ
+//   còn các khách của công ty đó để chọn tiếp cho đúng người.
+// - Khách mới / khách lẻ không công ty: cho gõ tự do (create: true), không
+//   tra cứu ngược, có thể bỏ trống.
+function initCompanyTomSelect() {
+  const selectEl = document.getElementById('select-customer-company');
+  if (!selectEl) return;
+
+  if (companyTomSelect) {
+    companyTomSelect.destroy();
+    companyTomSelect = null;
+  }
+  selectEl.innerHTML = '';
+
+  if (typeof TomSelect === 'undefined') return;
+
+  const companyNames = [...new Set(
+    (ALL_CUSTOMERS || []).map((c) => (c.companyName || '').trim()).filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, 'vi'));
+
+  companyTomSelect = new TomSelect(selectEl, {
+    options: companyNames.map((name) => ({ value: name, text: name })),
+    valueField: 'value',
+    labelField: 'text',
+    searchField: ['text'],
+    create: true,
+    createOnBlur: true,
+    placeholder: 'Gõ hoặc chọn tên công ty (bỏ trống nếu khách lẻ)...',
+    onChange: function (val) {
+      if (_isSyncingCustomerCompany) return; // đang tự điền từ ô khách hàng, không tra cứu ngược lại
+      if (!customerTypeSelect || customerTypeSelect.value !== 'Khách cũ') return; // khách mới: chỉ là chữ gõ tự do
+
+      if (!val) {
+        restoreFullCustomerOptions_(false);
+        return;
+      }
+
+      const matches = (ALL_CUSTOMERS || []).filter(
+        (c) => String(c.companyName || '').trim().toLowerCase() === String(val).trim().toLowerCase()
+      );
+
+      if (matches.length === 1) {
+        selectCustomerAndFill_(matches[0]);
+      } else if (matches.length > 1) {
+        setCustomerOptions_(matches);
+        if (tomSelectInstance) tomSelectInstance.clear(true);
+        const noteBox = document.getElementById('customer-note-box');
+        if (noteBox) noteBox.style.display = 'none';
+      } else {
+        restoreFullCustomerOptions_(false);
+      }
+    }
+  });
+}
+
+// TomSelect chọn khách cũ — hỗ trợ gõ tìm theo Tên khách hàng HOẶC Tên công ty
+// (searchField cả 2), hiển thị rõ cả 2 dòng trong danh sách gợi ý để dễ phân
+// biệt khi nhiều khách hàng trùng tên. Khi chọn xong, các trường SĐT/Email/
+// Tên công ty/Ghi chú tự điền theo đúng khách hàng vừa chọn (không cần gõ lại,
+// và luôn phản ánh đúng dữ liệu khách hàng đang lưu — ghi đè giá trị cũ nếu có).
 function initTomSelect() {
-  const selectOld = document.getElementById('select-old-customer');
-  if (!selectOld) return;
-  
+  const selectEl = document.getElementById('select-old-customer');
+  if (!selectEl) return;
+
   if (tomSelectInstance) {
     tomSelectInstance.destroy();
+    tomSelectInstance = null;
   }
-  
-  // Nạp options vào select
-  selectOld.innerHTML = '<option value="">Chọn khách hàng...</option>';
-  (ALL_CUSTOMERS || []).forEach(c => {
-    if (!c.customerName) return;
-    const opt = document.createElement('option');
-    opt.value = c.customerName;
-    opt.textContent = c.customerName;
-    selectOld.appendChild(opt);
-  });
-  
-  if (typeof TomSelect !== 'undefined') {
-    tomSelectInstance = new TomSelect('#select-old-customer', {
-      create: false,
-      sortField: { field: 'text', direction: 'asc' },
-      placeholder: 'Gõ để tìm kiếm khách hàng...'
-    });
-    
-    // Tự động điền SĐT/Email khi chọn + hiển thị Ghi chú quan trọng của khách hàng (nếu có)
-    tomSelectInstance.on('change', (val) => {
-      const found = ALL_CUSTOMERS.find(c => String(c.customerName).trim().toLowerCase() === String(val).trim().toLowerCase());
-      const noteBox = document.getElementById('customer-note-box');
-      const noteText = document.getElementById('customer-note-text');
-      if (found) {
-        const phoneInput = document.querySelector('#form-add-project [name="customerPhone"]');
-        const emailInput = document.querySelector('#form-add-project [name="customerEmail"]');
-        const companyInput = document.querySelector('#form-add-project [name="companyName"]');
-        if (phoneInput && !phoneInput.value) phoneInput.value = found.phone || '';
-        if (emailInput && !emailInput.value) emailInput.value = found.email || '';
-        if (companyInput && !companyInput.value) companyInput.value = found.companyName || '';
+  selectEl.innerHTML = '';
 
-        if (noteBox && noteText) {
-          if (found.note && found.note.trim()) {
-            noteText.textContent = found.note;
-            noteBox.style.display = 'block';
-          } else {
-            noteBox.style.display = 'none';
-          }
-        }
-      } else if (noteBox) {
-        noteBox.style.display = 'none';
-      }
+  if (typeof TomSelect === 'undefined') return;
+
+  const customerOptions = (ALL_CUSTOMERS || [])
+    .filter(function (c) { return c.customerName; })
+    .map(function (c) {
+      return { value: c.customerName, customerName: c.customerName, companyName: c.companyName || '' };
     });
-  }
+
+  tomSelectInstance = new TomSelect(selectEl, {
+    options: customerOptions,
+    valueField: 'value',
+    labelField: 'customerName',
+    searchField: ['customerName', 'companyName'],
+    create: false,
+    sortField: [{ field: 'companyName', direction: 'asc' }, { field: 'customerName', direction: 'asc' }],
+    placeholder: 'Gõ tên khách hàng hoặc tên công ty để tìm...',
+    render: {
+      option: function (data, escape) {
+        return '<div class="py-1">' +
+          '<div class="fw-semibold">' + escape(data.customerName) + '</div>' +
+          (data.companyName ? '<div class="text-muted small">' + escape(data.companyName) + '</div>' : '') +
+          '</div>';
+      },
+      item: function (data, escape) {
+        const label = data.companyName ? (data.companyName + ' — ' + data.customerName) : data.customerName;
+        return '<div>' + escape(label) + '</div>';
+      },
+      no_results: function (data, escape) {
+        return '<div class="no-results px-2 py-1 text-muted small">Không tìm thấy khách hàng/công ty "' + escape(data.input) + '"</div>';
+      }
+    },
+    onChange: function (val) {
+      if (_isSyncingCustomerCompany) return; // đang được tự điền từ ô Tên công ty, tránh lặp lại
+      const found = ALL_CUSTOMERS.find(function (c) {
+        return String(c.customerName).trim().toLowerCase() === String(val).trim().toLowerCase();
+      });
+      if (found) {
+        selectCustomerAndFill_(found);
+      } else {
+        const noteBox = document.getElementById('customer-note-box');
+        if (noteBox) noteBox.style.display = 'none';
+      }
+    }
+  });
 }
 
 // ============================================================
@@ -541,6 +681,8 @@ const customerNoteBox = document.getElementById('customer-note-box');
 
 if (customerTypeSelect && wrapperOld && wrapperNew) {
   customerTypeSelect.addEventListener('change', () => {
+    if (!companyTomSelect) initCompanyTomSelect(); // ô Tên công ty dùng chung cho cả 2 loại, khởi tạo 1 lần
+
     if (customerTypeSelect.value === 'Khách cũ') {
       wrapperOld.style.display = 'block';
       wrapperNew.style.display = 'none';
@@ -549,6 +691,7 @@ if (customerTypeSelect && wrapperOld && wrapperNew) {
       if (inputTaxCode) { inputTaxCode.removeAttribute('required'); inputTaxCode.value = ''; }
       if (wrapperCustomerNote) wrapperCustomerNote.style.display = 'none';
       if (!tomSelectInstance) initTomSelect();
+      restoreFullCustomerOptions_(false); // bỏ lọc theo công ty nếu còn sót từ lần chọn trước
     } else {
       wrapperOld.style.display = 'none';
       wrapperNew.style.display = 'block';
@@ -557,12 +700,12 @@ if (customerTypeSelect && wrapperOld && wrapperNew) {
       if (inputTaxCode) inputTaxCode.setAttribute('required', 'true');
       if (wrapperCustomerNote) wrapperCustomerNote.style.display = 'block';
       if (customerNoteBox) customerNoteBox.style.display = 'none';
-      
-      // Xoá sđt/email/công ty cũ nếu chuyển sang khách mới
+
+      // Xoá sđt/email/công ty cũ nếu chuyển sang khách mới (khách mới gõ tay lại từ đầu)
       document.querySelector('#form-add-project [name="customerPhone"]').value = '';
       document.querySelector('#form-add-project [name="customerEmail"]').value = '';
-      const companyInputReset = document.querySelector('#form-add-project [name="companyName"]');
-      if (companyInputReset) companyInputReset.value = '';
+      if (companyTomSelect) companyTomSelect.clear();
+      if (tomSelectInstance) restoreFullCustomerOptions_(false);
     }
   });
 }

@@ -75,7 +75,7 @@ function renderHotList() {
     return `
       <div class="reminder-item soon" onclick="openUpdateModal('${r.quoteId}')">
         <div>
-          <div class="name">${r.customerName}</div>
+          <div class="name">${buildCustomerNameInlineHtml_(r.customerName)}</div>
           <div class="meta">${r.sales || ''} · ${r.currentStatus || ''} · ${formatVND(r.amount)}</div>
         </div>
         <div class="reminder-actions">
@@ -112,7 +112,7 @@ function renderDataQuality() {
     return `
       <div class="reminder-item overdue" onclick="openUpdateModal('${r.quoteId}')">
         <div>
-          <div class="name">${r.customerName}</div>
+          <div class="name">${buildCustomerNameInlineHtml_(r.customerName)}</div>
           <div class="meta">Thiếu: ${missing.join(', ')}</div>
         </div>
       </div>`;
@@ -149,7 +149,7 @@ function renderReminders() {
       <div class="reminder-item ${r.urgency}" onclick="openUpdateModal('${r.quoteId}')">
         <div>
           <div class="name d-flex align-items-center flex-wrap">
-            ${r.customerName}
+            ${buildCustomerNameInlineHtml_(r.customerName)}
             ${fileLinkHtml}
           </div>
           <div class="meta">${r.sales || ''} · ${r.currentStatus || ''} · ${formatVND(r.amount)}</div>

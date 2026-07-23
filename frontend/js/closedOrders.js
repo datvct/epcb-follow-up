@@ -244,7 +244,7 @@ function renderClosedTable(list) {
       <tr style="cursor:pointer" onclick="openUpdateModal('${r.quoteId}')" title="Nhấn để xem / sửa đơn này">
         <td class="text-muted small text-center">${idx + 1}</td>
         <td>
-          <div class="fw-semibold">${r.customerName || '—'}</div>
+          ${buildCustomerNameLinesHtml_(r.customerName)}
           <div class="text-muted small">${r.customerType || ''}</div>
         </td>
         <td>${r.sales || '—'}</td>
