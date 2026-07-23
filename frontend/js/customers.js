@@ -49,6 +49,7 @@ function renderCustomerTable() {
   if (query) {
     list = list.filter(c => 
       String(c.customerName).toLowerCase().includes(query) ||
+      String(c.companyName || '').toLowerCase().includes(query) ||
       String(c.phone).toLowerCase().includes(query) ||
       String(c.email).toLowerCase().includes(query) ||
       String(c.customerId).toLowerCase().includes(query)
@@ -57,7 +58,7 @@ function renderCustomerTable() {
 
   customerTbody.innerHTML = '';
   if (list.length === 0) {
-    customerTbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">Không tìm thấy khách hàng nào.</td></tr>';
+    customerTbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Không tìm thấy khách hàng nào.</td></tr>';
     return;
   }
 
@@ -67,6 +68,7 @@ function renderCustomerTable() {
     tr.innerHTML = `
       <td><span class="badge bg-secondary">${c.customerId}</span></td>
       <td class="fw-bold">${c.customerName || ''}</td>
+      <td>${c.companyName || '-'}</td>
       <td>${c.phone || '-'}</td>
       <td>${c.email || '-'}</td>
       <td class="small" style="max-width: 220px; white-space: normal;">${noteDisplay || '<span class="text-muted">-</span>'}</td>
@@ -95,6 +97,7 @@ function openUpdateCustomerModal(id) {
   if (!form) return;
   form.customerId.value = c.customerId || '';
   form.customerName.value = c.customerName || '';
+  form.companyName.value = c.companyName || '';
   form.phone.value = c.phone || '';
   form.email.value = c.email || '';
   form.note.value = c.note || '';

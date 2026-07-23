@@ -139,21 +139,21 @@ function renderProjectTable(rows) {
     return `
       <tr class="${rowClass}" style="cursor:pointer" onclick="openUpdateModal('${r.quoteId}')">
         <td>
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <div class="fw-semibold">${r.customerName}</div>
-              <div class="text-muted small">${r.customerType || ''}</div>
+          <div class="d-flex align-items-center gap-2">
+            <div class="min-w-0 flex-grow-1">
+              <div class="fw-semibold text-truncate" title="${r.customerName || ''}">${r.customerName || ''}</div>
+              <div class="text-muted small text-truncate">${r.customerType || ''}</div>
             </div>
             ${fileLinkHtml}
           </div>
         </td>
-        <td>${r.sales || ''}</td>
-        <td>${formatVND(r.amount)}</td>
+        <td class="text-nowrap">${r.sales || ''}</td>
+        <td class="text-nowrap">${formatVND(r.amount)}</td>
         <td><span class="status-badge ${statusClass(r.currentStatus)}">${r.currentStatus || ''}</span></td>
-        <td>${formatPercent(r.probability)}</td>
-        <td>${formatVND(r.expectedRevenue)}</td>
-        <td>${r.followUp || 0} lần</td>
-        <td>${r.nextFollowUpDate || '—'}</td>
+        <td class="text-nowrap">${formatPercent(r.probability)}</td>
+        <td class="text-nowrap">${formatVND(r.expectedRevenue)}</td>
+        <td class="text-nowrap">${r.followUp || 0} lần</td>
+        <td class="text-nowrap">${r.nextFollowUpDate || '—'}</td>
         <td class="text-end"><i class="ti ti-edit btn-edit-row"></i></td>
       </tr>`;
   }).join('');
@@ -193,12 +193,42 @@ function openUpdateModal(projectId) {
   document.getElementById('update-cadence-hint').textContent = '';
   applyReasonRequiredHint(row.finalStatus || row.currentStatus, document.getElementById('update-note-label'), document.getElementById('update-note'));
 
-  // Hiển thị ghi chú quan trọng của khách hàng (nếu có)
+  // Hiển thị tên khách hàng + tên công ty (nếu có) ngay đầu modal, và ghi
+  // chú quan trọng của khách hàng (nếu có) — tra theo customerName trong
+  // danh sách ALL_CUSTOMERS vì tên công ty chỉ lưu ở sheet "Customers".
+  const customer = (typeof ALL_CUSTOMERS !== 'undefined' ? ALL_CUSTOMERS : [])
+    .find(c => String(c.customerName).trim().toLowerCase() === String(row.customerName || '').trim().toLowerCase());
+
+  const nameEl = document.getElementById('update-modal-customer-name');
+  if (nameEl) nameEl.textContent = row.customerName || '';
+
+  const companyBox = document.getElementById('update-modal-company-name');
+  const companyText = document.getElementById('update-modal-company-name-text');
+  if (companyBox && companyText) {
+    if (customer && customer.companyName && String(customer.companyName).trim()) {
+      companyText.textContent = customer.companyName;
+      companyBox.style.display = 'block';
+    } else {
+      companyBox.style.display = 'none';
+    }
+  }
+
+  // Nhóm khách hàng — dữ liệu lưu dạng 1 chuỗi nối bởi ", " (VD: "SI, OEM"),
+  // tách ra thành mảng để set lại đúng các lựa chọn đã chọn trên TomSelect.
+  const segmentValues = String(row.customerType2 || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (updateSegmentTomSelect) {
+    updateSegmentTomSelect.clear(true);
+    updateSegmentTomSelect.setValue(segmentValues, true);
+  } else {
+    const segmentSelect = document.getElementById('update-customer-segment');
+    if (segmentSelect) {
+      Array.from(segmentSelect.options).forEach(opt => { opt.selected = segmentValues.indexOf(opt.value) !== -1; });
+    }
+  }
+
   const noteBox = document.getElementById('update-modal-customer-note-box');
   const noteText = document.getElementById('update-modal-customer-note-text');
   if (noteBox && noteText) {
-    const customer = (typeof ALL_CUSTOMERS !== 'undefined' ? ALL_CUSTOMERS : [])
-      .find(c => String(c.customerName).trim().toLowerCase() === String(row.customerName || '').trim().toLowerCase());
     if (customer && customer.note && String(customer.note).trim()) {
       noteText.textContent = customer.note;
       noteBox.style.display = 'block';
@@ -357,7 +387,14 @@ async function quickFollowUp(projectId) {
 
 document.getElementById('form-update-project').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const form = Object.fromEntries(new FormData(e.target).entries());
+  const formData = new FormData(e.target);
+  const form = Object.fromEntries(formData.entries());
+
+  // Nhóm khách hàng là multi-select — Object.fromEntries chỉ giữ giá trị
+  // cuối cùng nên phải gom lại bằng getAll() giống form Thêm báo giá.
+  const selectedSegments = formData.getAll('customerType2');
+  form.customerType2 = selectedSegments.join(', ');
+
   const projectId = form.projectId;
   delete form.projectId;
   showLoading(true);
@@ -428,8 +465,10 @@ function initTomSelect() {
       if (found) {
         const phoneInput = document.querySelector('#form-add-project [name="customerPhone"]');
         const emailInput = document.querySelector('#form-add-project [name="customerEmail"]');
+        const companyInput = document.querySelector('#form-add-project [name="companyName"]');
         if (phoneInput && !phoneInput.value) phoneInput.value = found.phone || '';
         if (emailInput && !emailInput.value) emailInput.value = found.email || '';
+        if (companyInput && !companyInput.value) companyInput.value = found.companyName || '';
 
         if (noteBox && noteText) {
           if (found.note && found.note.trim()) {
@@ -468,6 +507,28 @@ function initSegmentTomSelect() {
   });
 }
 
+// ============================================================
+// TOM SELECT: MULTI-SELECT "NHÓM KHÁCH HÀNG" (Ở MODAL CẬP NHẬT BÁO GIÁ)
+// ============================================================
+let updateSegmentTomSelect = null;
+
+function initUpdateSegmentTomSelect() {
+  const el = document.getElementById('update-customer-segment');
+  if (!el || typeof TomSelect === 'undefined') return;
+
+  if (updateSegmentTomSelect) {
+    updateSegmentTomSelect.destroy();
+    updateSegmentTomSelect = null;
+  }
+
+  updateSegmentTomSelect = new TomSelect(el, {
+    plugins: ['remove_button'],
+    placeholder: 'Chọn 1 hoặc nhiều nhóm khách hàng...',
+    maxItems: null,
+    sortField: { field: 'text', direction: 'asc' }
+  });
+}
+
 // Xử lý giao diện chọn Khách cũ / Khách mới
 const customerTypeSelect = document.getElementById('select-customer-type');
 const wrapperOld = document.getElementById('wrapper-customer-old');
@@ -497,9 +558,11 @@ if (customerTypeSelect && wrapperOld && wrapperNew) {
       if (wrapperCustomerNote) wrapperCustomerNote.style.display = 'block';
       if (customerNoteBox) customerNoteBox.style.display = 'none';
       
-      // Xoá sđt/email cũ nếu chuyển sang khách mới
+      // Xoá sđt/email/công ty cũ nếu chuyển sang khách mới
       document.querySelector('#form-add-project [name="customerPhone"]').value = '';
       document.querySelector('#form-add-project [name="customerEmail"]').value = '';
+      const companyInputReset = document.querySelector('#form-add-project [name="companyName"]');
+      if (companyInputReset) companyInputReset.value = '';
     }
   });
 }

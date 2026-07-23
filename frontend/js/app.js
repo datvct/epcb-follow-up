@@ -49,7 +49,10 @@ function toast(message, type) {
 }
 
 function formatVND(value) {
-  return new Intl.NumberFormat('vi-VN').format(Math.round(Number(value) || 0)) + ' đ';
+  // Dùng khoảng trắng không ngắt dòng (\u00A0) trước "đ" để con số và đơn vị
+  // tiền luôn dính liền nhau — tránh bị "rớt" chữ "đ" xuống dòng riêng khi
+  // cột trong bảng bị hẹp lại.
+  return new Intl.NumberFormat('vi-VN').format(Math.round(Number(value) || 0)) + '\u00A0đ';
 }
 
 function formatPercent(value) {
@@ -222,11 +225,13 @@ async function init() {
     fillSelect(document.querySelector('[name="customerType"]'), FORM_OPTIONS.customerType);
     fillSelect(document.querySelector('[name="currentStatus"]'), FORM_OPTIONS.currentStatus);
     fillSelect(document.getElementById('select-customer-segment'), FORM_OPTIONS.customerSegment);
+    fillSelect(document.getElementById('update-customer-segment'), FORM_OPTIONS.customerSegment);
     fillSelect(document.getElementById('select-sales'), FORM_OPTIONS.sales, 'Chọn người phụ trách...');
     fillSelect(document.getElementById('update-current-status'), FORM_OPTIONS.currentStatus);
     fillSelect(document.getElementById('update-final-status'), FORM_OPTIONS.finalStatus, 'Chưa kết thúc');
     document.querySelector('[name="quoteDate"]').value = new Date().toISOString().slice(0, 10);
     if (typeof initSegmentTomSelect === 'function') initSegmentTomSelect();
+    if (typeof initUpdateSegmentTomSelect === 'function') initUpdateSegmentTomSelect();
 
     ALL_PROJECTS = await callApi('getProjects');
     ALL_CUSTOMERS = await callApi('getCustomers').catch(() => []);

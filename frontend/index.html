@@ -212,7 +212,8 @@
                   <thead>
                     <tr>
                       <th>Mã số thuế</th>
-                      <th>Khách hàng / Công ty</th>
+                      <th>Tên khách hàng</th>
+                      <th>Tên công ty</th>
                       <th>Số điện thoại</th>
                       <th>Email</th>
                       <th>Ghi chú quan trọng</th>
@@ -263,6 +264,11 @@
                   <label class="form-label">Mã số thuế (Mã khách hàng)</label>
                   <input type="text" class="form-control" name="customerTaxCode" id="input-customer-taxcode"
                     placeholder="VD: 0312345678" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Tên công ty (Tuỳ chọn)</label>
+                  <input type="text" class="form-control" name="companyName" id="input-customer-company"
+                    placeholder="VD: Công ty TNHH ABC" autocomplete="off">
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Số điện thoại khách hàng (Tuỳ chọn)</label>
@@ -604,8 +610,12 @@
               <input type="text" class="form-control" id="display-customer-taxcode" disabled>
             </div>
             <div class="mb-3">
-              <label class="form-label">Tên khách hàng / Công ty</label>
+              <label class="form-label">Tên khách hàng</label>
               <input type="text" class="form-control" name="customerName" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Tên công ty</label>
+              <input type="text" class="form-control" name="companyName" placeholder="VD: Công ty TNHH ABC">
             </div>
             <div class="mb-3">
               <label class="form-label">Số điện thoại</label>
@@ -643,6 +653,12 @@
         <form id="form-update-project">
           <div class="modal-body row g-3">
             <input type="hidden" name="projectId">
+            <div class="col-12">
+              <div class="fw-bold fs-5" id="update-modal-customer-name"></div>
+              <div class="text-muted small" id="update-modal-company-name" style="display:none;">
+                <i class="ti ti-building"></i> <span id="update-modal-company-name-text"></span>
+              </div>
+            </div>
             <div class="col-12" id="update-modal-customer-note-box" style="display:none">
               <div class="alert alert-warning d-flex align-items-start gap-2 mb-0 py-2 px-3"
                 style="border-left: 4px solid #f59e0b; background: #fffbeb; border-radius: 8px;">
@@ -710,6 +726,10 @@
               <label class="form-label">Ngày follow up tiếp theo</label>
               <input type="date" class="form-control" name="nextFollowUpDate" id="update-next-followup">
               <div class="form-text" id="update-cadence-hint"></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Nhóm khách hàng (có thể chọn nhiều)</label>
+              <select class="form-select" name="customerType2" id="update-customer-segment" multiple></select>
             </div>
             <div class="col-12">
               <label class="form-label" id="update-note-label">Ghi chú</label>
