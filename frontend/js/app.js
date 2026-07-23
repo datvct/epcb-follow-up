@@ -128,7 +128,6 @@ async function reloadAll() {
   refreshDashboard();
   if (typeof renderCustomerTable === 'function') renderCustomerTable();
   if (typeof initTomSelect === 'function') initTomSelect();
-  if (typeof initCompanyTomSelect === 'function') initCompanyTomSelect();
   if (!document.getElementById('tab-reports').classList.contains('d-none')) renderCurrentReport();
   if (typeof renderClosedOrders === 'function' && !document.getElementById('tab-closed-orders').classList.contains('d-none')) renderClosedOrders();
 }
@@ -237,7 +236,6 @@ async function init() {
     ALL_PROJECTS = await callApi('getProjects');
     ALL_CUSTOMERS = await callApi('getCustomers').catch(() => []);
     fillCustomerDatalist(ALL_CUSTOMERS);
-    if (typeof initCompanyTomSelect === 'function') initCompanyTomSelect();
     applyListFilters();
     refreshDashboard();
 

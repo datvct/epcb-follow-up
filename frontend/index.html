@@ -245,18 +245,9 @@
                   <label class="form-label">Phân loại khách hàng</label>
                   <select class="form-select" name="customerType" id="select-customer-type" required></select>
                 </div>
-                <div class="col-md-6">
-                  <label class="form-label">Tên công ty (Tuỳ chọn)</label>
-                  <select id="select-customer-company" name="companyName" placeholder="Gõ hoặc chọn tên công ty..."></select>
-                  <div class="form-text">Khách hàng cũ: chọn công ty đã có sẵn để tự điền khách hàng liên hệ bên dưới
-                    (nếu công ty chỉ có 1 người, điền luôn; nhiều người thì danh sách bên dưới sẽ lọc theo công ty này
-                    để chọn tiếp). Khách lẻ không có công ty thì bỏ trống.</div>
-                </div>
                 <div class="col-md-6" id="wrapper-customer-old" style="display: none;">
                   <label class="form-label">Chọn khách hàng cũ</label>
                   <select id="select-old-customer" name="customerNameOld" placeholder="Gõ tìm kiếm..."></select>
-                  <div class="form-text">Gõ tên người liên hệ hoặc tên công ty đều tìm được — SĐT/Email/Tên công ty sẽ
-                    tự điền theo lựa chọn.</div>
                 </div>
                 <div class="col-12" id="customer-note-box" style="display: none;">
                   <div class="alert alert-warning py-2 px-3 mb-0 small">
@@ -273,6 +264,11 @@
                   <label class="form-label">Mã số thuế (Mã khách hàng)</label>
                   <input type="text" class="form-control" name="customerTaxCode" id="input-customer-taxcode"
                     placeholder="VD: 0312345678" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Tên công ty (Tuỳ chọn)</label>
+                  <input type="text" class="form-control" name="companyName" id="input-customer-company"
+                    placeholder="VD: Công ty TNHH ABC" autocomplete="off">
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Số điện thoại khách hàng (Tuỳ chọn)</label>
