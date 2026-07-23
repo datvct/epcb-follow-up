@@ -793,7 +793,7 @@ body {
    thấy tên khách hàng dù đang xem các cột bên phải. */
 #project-table td:first-child,
 #project-table th:first-child {
-  max-width: 260px;
+  max-width: 400px;
 }
 
 #project-table th:first-child,
