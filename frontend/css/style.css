@@ -764,6 +764,77 @@ body {
   border-collapse: collapse;
 }
 
+/* Utility: cho phép 1 flex item co lại nhỏ hơn nội dung của nó (mặc định
+   flex item không tự co nhỏ hơn nội dung, khiến phần tử bên cạnh — VD icon
+   Drive — bị đẩy/bóp méo). Dùng cùng .text-truncate để tên khách hàng dài
+   tự cắt bớt (...) thay vì đẩy icon ra khỏi khung. */
+.min-w-0 {
+  min-width: 0;
+}
+
+/* Bảng "Danh sách báo giá": đặt bề rộng tối thiểu để các cột (giá trị đơn,
+   doanh thu kỳ vọng, ngày follow up...) không bị bóp hẹp lại trên màn hình
+   nhỏ — thay vào đó bảng sẽ cuộn ngang (nhờ .table-responsive có sẵn
+   overflow-x: auto từ Bootstrap), tránh chữ "đ" hay icon Drive bị vỡ layout. */
+#project-table {
+  min-width: 920px;
+}
+
+/* Icon xem file Drive trong cột "Khách hàng": không cho co lại khi tên
+   khách hàng dài — tránh icon bị bóp méo cạnh tên. */
+#project-tbody .btn-view-file,
+#project-tbody .text-muted.small.ms-2 {
+  flex-shrink: 0;
+}
+
+/* Cột "Khách hàng": giới hạn bề rộng để tên công ty quá dài tự cắt bớt (...)
+   thay vì chiếm hết diện tích — kết hợp với .text-truncate + .min-w-0 ở
+   trên. Đồng thời ghim (sticky) cột này bên trái khi cuộn ngang, để luôn
+   thấy tên khách hàng dù đang xem các cột bên phải. */
+#project-table td:first-child,
+#project-table th:first-child {
+  max-width: 260px;
+}
+
+#project-table th:first-child,
+#project-table td:first-child,
+#project-table th:last-child,
+#project-table td:last-child {
+  position: sticky;
+  background: #ffffff;
+  z-index: 1;
+}
+
+#project-table th:first-child { left: 0; }
+#project-table td:first-child { left: 0; box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08); }
+#project-table th:last-child { right: 0; }
+#project-table td:last-child { right: 0; box-shadow: -2px 0 4px -2px rgba(0, 0, 0, 0.08); }
+
+#project-table thead th:first-child,
+#project-table thead th:last-child {
+  background: #f8fafc;
+  z-index: 2;
+}
+
+/* Giữ đúng màu nền của dòng (hover / sắp tới hạn / quá hạn) trên 2 cột
+   ghim cố định, không để chúng lộ ra màu trắng mặc định phía trên. */
+#project-tbody tr:hover td:first-child,
+#project-tbody tr:hover td:last-child {
+  background-color: #f8fafc !important;
+}
+.row-overdue td:first-child, .row-overdue td:last-child {
+  background-color: #fff8f8 !important;
+}
+.row-overdue:hover td:first-child, .row-overdue:hover td:last-child {
+  background-color: #fee2e2 !important;
+}
+.row-soon td:first-child, .row-soon td:last-child {
+  background-color: #fffbf5 !important;
+}
+.row-soon:hover td:first-child, .row-soon:hover td:last-child {
+  background-color: #ffedd5 !important;
+}
+
 .table > :not(caption) > * > * {
   padding: 14px 16px;
   vertical-align: middle;

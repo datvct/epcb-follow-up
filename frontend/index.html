@@ -246,8 +246,10 @@
                   <select class="form-select" name="customerType" id="select-customer-type" required></select>
                 </div>
                 <div class="col-md-6" id="wrapper-customer-old" style="display: none;">
-                  <label class="form-label">Chọn khách hàng cũ</label>
-                  <select id="select-old-customer" name="customerNameOld" placeholder="Gõ tìm kiếm..."></select>
+                  <label class="form-label">Chọn công ty (khách hàng cũ)</label>
+                  <select id="select-old-customer" name="customerNameOld"
+                    placeholder="Gõ tìm công ty hoặc tên khách hàng..."></select>
+                  <div class="form-text" id="old-customer-name-hint"></div>
                 </div>
                 <div class="col-12" id="customer-note-box" style="display: none;">
                   <div class="alert alert-warning py-2 px-3 mb-0 small">
@@ -260,15 +262,20 @@
                   <input type="text" class="form-control" name="customerNameNew" id="input-customer-new"
                     placeholder="VD: Công ty ABC..." autocomplete="off">
                 </div>
+                <div class="col-md-6" id="wrapper-customer-company">
+                  <label class="form-label">Tên công ty (Tuỳ chọn)</label>
+                  <input type="text" class="form-control" name="companyName" id="input-customer-company"
+                    placeholder="VD: Công ty TNHH ABC" autocomplete="off">
+                </div>
+                <div class="col-md-6" id="wrapper-customer-old-name" style="display: none;">
+                  <label class="form-label">Tên khách hàng</label>
+                  <input type="text" class="form-control" id="display-old-customer-name" readonly
+                    placeholder="Tự động điền khi chọn công ty/khách hàng cũ ở trên">
+                </div>
                 <div class="col-md-6" id="wrapper-customer-taxcode">
                   <label class="form-label">Mã số thuế (Mã khách hàng)</label>
                   <input type="text" class="form-control" name="customerTaxCode" id="input-customer-taxcode"
                     placeholder="VD: 0312345678" required>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Tên công ty (Tuỳ chọn)</label>
-                  <input type="text" class="form-control" name="companyName" id="input-customer-company"
-                    placeholder="VD: Công ty TNHH ABC" autocomplete="off">
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Số điện thoại khách hàng (Tuỳ chọn)</label>
