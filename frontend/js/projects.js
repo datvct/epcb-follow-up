@@ -176,13 +176,44 @@ function renderProjectTable(rows) {
         : r.productFile
           ? `<span class="text-muted small ms-2" title="${r.productFile}"><i class="ti ti-file-description"></i></span>`
           : "";
+// Tooltip đầy đủ khi hover cột khách hàng: tên công ty + tên người
+      // liên hệ (nếu có và khác tên công ty) + phân loại khách hàng — vì
+      // ô này bị cắt bớt (text-truncate) nên cần xem đủ thông tin khi rê chuột.
+      const contactName =
+        r.customerContactName && r.customerContactName !== r.customerName
+          ? r.customerContactName
+          : "";
+
+      // Nếu vì lý do gì đó ô "Tên khách hàng/công ty" của báo giá bị trống
+      // (dữ liệu cũ/lỗi nhập liệu), tra trong danh sách Khách hàng theo tên
+      // người liên hệ để lấy tạm tên công ty hiển thị, tránh để trống ô.
+      let displayCustomerName = r.customerName || "";
+      if (!displayCustomerName && r.customerContactName) {
+        const foundCustomer = (
+          typeof ALL_CUSTOMERS !== "undefined" ? ALL_CUSTOMERS : []
+        ).find(
+          (c) =>
+            String(c.customerName).trim().toLowerCase() ===
+            String(r.customerContactName).trim().toLowerCase(),
+        );
+        if (foundCustomer) {
+          displayCustomerName =
+            foundCustomer.companyName || foundCustomer.customerName || "";
+        }
+      }
+
+      const customerTooltipParts = [];
+      if (r.customerName) customerTooltipParts.push("Công ty: " + r.customerName);
+      if (contactName) customerTooltipParts.push("Người liên hệ: " + contactName);
+      if (r.customerType) customerTooltipParts.push("Phân loại: " + r.customerType);
+      const customerTooltip = customerTooltipParts.join("\n");
 
       return `
       <tr class="${rowClass}" style="cursor:pointer" onclick="openUpdateModal('${r.quoteId}')">
         <td>
-          <div class="d-flex align-items-center gap-2">
+          <div class="d-flex align-items-center gap-2" title="${customerTooltip}">
             <div class="min-w-0 flex-grow-1">
-              <div class="fw-semibold text-truncate" title="${r.customerName || ""}">${r.customerName || ""}</div>
+              <div class="fw-semibold text-truncate">${displayCustomerName || ""}</div>
               <div class="text-muted small text-truncate">${r.customerType || ""}</div>
             </div>
             ${fileLinkHtml}
