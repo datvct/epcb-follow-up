@@ -20,8 +20,7 @@ function fillCustomerDatalist(customers) {
 
 const TAB_TITLES = {
   dashboard: 'Tổng quan',
-  list: 'Danh sách & follow up',
-  customers: 'Khách hàng',
+  list: 'Danh sách',
   add: 'Thêm báo giá',
   reports: 'Báo cáo',
   'sales-activity': 'Hoạt động Sales',
@@ -126,7 +125,6 @@ async function reloadAll() {
   fillCustomerDatalist(ALL_CUSTOMERS);
   applyListFilters();
   refreshDashboard();
-  if (typeof renderCustomerTable === 'function') renderCustomerTable();
   if (typeof initTomSelect === 'function') initTomSelect();
   if (!document.getElementById('tab-reports').classList.contains('d-none')) renderCurrentReport();
   if (typeof renderClosedOrders === 'function' && !document.getElementById('tab-closed-orders').classList.contains('d-none')) renderClosedOrders();
@@ -145,7 +143,6 @@ function switchToTab(tabName) {
   if (tabName === 'sales-activity' && typeof renderSalesTimelineChart === 'function') renderSalesTimelineChart();
   if (tabName === 'closed-orders' && typeof renderClosedOrders === 'function') renderClosedOrders();
   if (tabName === 'probability') loadProbabilityTab();
-  if (tabName === 'customers' && typeof renderCustomerTable === 'function') renderCustomerTable();
 }
 
 document.getElementById('main-tabs').addEventListener('click', (e) => {

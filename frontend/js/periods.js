@@ -54,10 +54,12 @@ function describePeriod(periodKey) {
 }
 
 // Lọc danh sách báo giá theo "Ngày báo giá" (quoteDate) nằm trong khoảng thời gian.
+// Các dòng đang chờ đồng bộ (_pendingSync) luôn được hiển thị bất kể bộ lọc thời gian.
 function filterByPeriod(rows, periodKey) {
   const bounds = getPeriodBounds(periodKey);
   if (!bounds) return rows;
   return rows.filter(function (r) {
+    if (r._pendingSync || r._syncError) return true;
     if (!r.quoteDate) return false;
     const d = startOfDay_(new Date(r.quoteDate));
     return d >= bounds.start && d <= bounds.end;

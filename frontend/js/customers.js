@@ -1,8 +1,6 @@
 // CUSTOMERS.JS
-// Quản lý hiển thị danh sách Khách hàng và Cập nhật Khách hàng
+// Modal cập nhật thông tin khách hàng (gọi từ bất kỳ đâu — không cần tab riêng).
 
-const customerTbody = document.getElementById("customer-list-tbody");
-const filterCustomerName = document.getElementById("filter-customer-name");
 let modalUpdateCustomer;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -10,10 +8,6 @@ document.addEventListener("DOMContentLoaded", () => {
     modalUpdateCustomer = new bootstrap.Modal(
       document.getElementById("modal-update-customer"),
     );
-  }
-
-  if (filterCustomerName) {
-    filterCustomerName.addEventListener("input", renderCustomerTable);
   }
 
   const formUpdateCustomer = document.getElementById("form-update-customer");
@@ -34,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
         await callApi("updateCustomer", form);
         toast("Cập nhật thông tin khách hàng thành công!");
         modalUpdateCustomer.hide();
-        await reloadAll(); // Tải lại toàn bộ dữ liệu mới nhất
+        await reloadAll();
       } catch (err) {
         toast("Lỗi: " + err.message, "danger");
       } finally {
@@ -45,63 +39,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-function renderCustomerTable() {
-  if (!customerTbody) return;
-
-  let list = ALL_CUSTOMERS || [];
-  const query = filterCustomerName.value.trim().toLowerCase();
-
-  if (query) {
-    list = list.filter(
-      (c) =>
-        String(c.customerName).toLowerCase().includes(query) ||
-        String(c.companyName || "")
-          .toLowerCase()
-          .includes(query) ||
-        String(c.phone).toLowerCase().includes(query) ||
-        String(c.email).toLowerCase().includes(query) ||
-        String(c.customerId).toLowerCase().includes(query),
-    );
-  }
-
-  customerTbody.innerHTML = "";
-  if (list.length === 0) {
-    customerTbody.innerHTML =
-      '<tr><td colspan="8" class="text-center py-4 text-muted">Không tìm thấy khách hàng nào.</td></tr>';
+function openUpdateCustomerModal(idOrName) {
+  const q = String(idOrName).trim().toLowerCase();
+  const c = ALL_CUSTOMERS.find((x) => String(x.customerId).trim().toLowerCase() === q)
+    || ALL_CUSTOMERS.find((x) => String(x.customerName).trim().toLowerCase() === q)
+    || ALL_CUSTOMERS.find((x) => String(x.companyName || "").trim().toLowerCase() === q);
+  if (!c) {
+    toast("Không tìm thấy khách hàng này.", "warning");
     return;
   }
-
-  list.forEach((c) => {
-    const tr = document.createElement("tr");
-    const noteDisplay = c.note ? String(c.note) : "";
-    tr.innerHTML = `
-      <td><span class="badge bg-secondary">${c.customerId}</span></td>
-      <td class="fw-bold">${c.companyName || "-"}</td>
-      <td>${c.customerName || "-"}</td>          
-      <td>${c.phone || "-"}</td>
-      <td>${c.email || "-"}</td>
-      <td class="small" style="max-width: 220px; white-space: normal;">${noteDisplay || '<span class="text-muted">-</span>'}</td>
-      <td class="small text-muted">${formatDateVN(c.updatedAt)}</td>
-      <td>
-        <button class="btn btn-sm btn-outline-primary btn-edit-customer" data-id="${c.customerId}">
-          <i class="ti ti-edit"></i> Sửa
-        </button>
-      </td>
-    `;
-    customerTbody.appendChild(tr);
-  });
-
-  document.querySelectorAll(".btn-edit-customer").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const id = e.currentTarget.getAttribute("data-id");
-      openUpdateCustomerModal(id);
-    });
-  });
-}
-
-function openUpdateCustomerModal(id) {
-  const c = ALL_CUSTOMERS.find((x) => String(x.customerId) === String(id));
-  if (!c) return;
   const form = document.getElementById("form-update-customer");
   if (!form) return;
   form.customerId.value = c.customerId || "";

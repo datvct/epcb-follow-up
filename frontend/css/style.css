@@ -777,7 +777,7 @@ body {
    nhỏ — thay vào đó bảng sẽ cuộn ngang (nhờ .table-responsive có sẵn
    overflow-x: auto từ Bootstrap), tránh chữ "đ" hay icon Drive bị vỡ layout. */
 #project-table {
-  min-width: 920px;
+  min-width: 960px;
 }
 
 /* Icon xem file Drive trong cột "Khách hàng": không cho co lại khi tên
@@ -792,12 +792,16 @@ body {
    trên. Đồng thời ghim (sticky) cột này bên trái khi cuộn ngang, để luôn
    thấy tên khách hàng dù đang xem các cột bên phải. */
 #project-table td:first-child,
-#project-table th:first-child {
-  max-width: 400px;
+#project-table th:first-child,
+#project-table td:nth-child(2),
+#project-table th:nth-child(2) {
+  max-width: 180px;
 }
 
 #project-table th:first-child,
 #project-table td:first-child,
+#project-table th:nth-child(2),
+#project-table td:nth-child(2),
 #project-table th:last-child,
 #project-table td:last-child {
   position: sticky;
@@ -807,10 +811,13 @@ body {
 
 #project-table th:first-child { left: 0; }
 #project-table td:first-child { left: 0; box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08); }
+#project-table th:nth-child(2) { left: 180px; }
+#project-table td:nth-child(2) { left: 180px; box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08); }
 #project-table th:last-child { right: 0; }
 #project-table td:last-child { right: 0; box-shadow: -2px 0 4px -2px rgba(0, 0, 0, 0.08); }
 
 #project-table thead th:first-child,
+#project-table thead th:nth-child(2),
 #project-table thead th:last-child {
   background: #f8fafc;
   z-index: 2;
@@ -819,19 +826,20 @@ body {
 /* Giữ đúng màu nền của dòng (hover / sắp tới hạn / quá hạn) trên 2 cột
    ghim cố định, không để chúng lộ ra màu trắng mặc định phía trên. */
 #project-tbody tr:hover td:first-child,
+#project-tbody tr:hover td:nth-child(2),
 #project-tbody tr:hover td:last-child {
   background-color: #f8fafc !important;
 }
-.row-overdue td:first-child, .row-overdue td:last-child {
+.row-overdue td:first-child, .row-overdue td:nth-child(2), .row-overdue td:last-child {
   background-color: #fff8f8 !important;
 }
-.row-overdue:hover td:first-child, .row-overdue:hover td:last-child {
+.row-overdue:hover td:first-child, .row-overdue:hover td:nth-child(2), .row-overdue:hover td:last-child {
   background-color: #fee2e2 !important;
 }
-.row-soon td:first-child, .row-soon td:last-child {
+.row-soon td:first-child, .row-soon td:nth-child(2), .row-soon td:last-child {
   background-color: #fffbf5 !important;
 }
-.row-soon:hover td:first-child, .row-soon:hover td:last-child {
+.row-soon:hover td:first-child, .row-soon:hover td:nth-child(2), .row-soon:hover td:last-child {
   background-color: #ffedd5 !important;
 }
 
@@ -873,6 +881,11 @@ body {
   background-color: #ffedd5 !important;
 }
 
+/* Nút hành động trên bảng */
+.btn-action-inline {
+  cursor: pointer;
+}
+
 .btn-edit-row {
   color: var(--accent);
   font-size: 1.15rem;
@@ -883,7 +896,24 @@ body {
 }
 
 .btn-edit-row:hover {
-  background: var(--accent-light);
+  color: #fff !important;
+  background: var(--accent) !important;
+  transform: scale(1.1);
+}
+
+/* Nút sửa thông tin khách hàng — đồng bộ kích thước với nút sửa đơn */
+.btn-edit-customer-inline {
+  font-size: 1.15rem;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+.btn-edit-customer-inline:hover {
+  color: #fff !important;
+  background: var(--amber) !important;
   transform: scale(1.1);
 }
 
@@ -1157,4 +1187,101 @@ body {
     width: 100%;
     margin-top: 4px;
   }
+}
+
+/* ============================================================
+   SYNC STATUS WIDGET (Topbar)
+   ============================================================ */
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: var(--transition);
+  cursor: default;
+  user-select: none;
+  border: 1px solid transparent;
+}
+
+.sync-status i {
+  font-size: 1rem;
+}
+
+.sync-status.sync-idle {
+  color: var(--green);
+  background: var(--green-light);
+  border-color: rgba(16, 185, 129, 0.15);
+}
+
+.sync-status.sync-pending {
+  color: var(--amber);
+  background: var(--amber-light);
+  border-color: rgba(242, 133, 0, 0.15);
+  cursor: default;
+}
+
+.sync-status.sync-pending i {
+  animation: sync-spin 1s linear infinite;
+}
+
+.sync-status.sync-error {
+  color: var(--red);
+  background: var(--red-light);
+  border-color: rgba(239, 68, 68, 0.15);
+  cursor: pointer;
+}
+
+.sync-status.sync-error:hover {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+@keyframes sync-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   PENDING-SYNC (TEMPORARY) PROJECT ROWS
+   ============================================================ */
+tr.row-pending-sync {
+  opacity: 0.65;
+  position: relative;
+  pointer-events: none;
+}
+
+tr.row-pending-sync td:first-child::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--amber);
+  margin-right: 6px;
+  animation: sync-pulse 1.2s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+tr.row-sync-error {
+  background: var(--red-light) !important;
+  opacity: 0.85;
+}
+
+tr.row-sync-error td:first-child::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+@keyframes sync-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
 }

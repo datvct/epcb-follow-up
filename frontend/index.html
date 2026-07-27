@@ -59,10 +59,7 @@
         <nav class="sidebar-nav" id="main-tabs">
           <button class="side-link active" data-tab="dashboard"><i class="ti ti-layout-dashboard"></i><span>Tổng
               quan</span></button>
-          <button class="side-link" data-tab="list"><i class="ti ti-list-details"></i><span>Danh sách &amp; follow
-              up</span></button>
-          <button class="side-link" data-tab="customers"><i class="ti ti-users-group"></i><span>Khách
-              hàng</span></button>
+          <button class="side-link" data-tab="list"><i class="ti ti-list-details"></i><span>Danh sách</span></button>
           <button class="side-link" data-tab="add"><i class="ti ti-plus"></i><span>Thêm báo giá</span></button>
           <button class="side-link" data-tab="reports"><i class="ti ti-report"></i><span>Báo cáo</span></button>
           <button class="side-link" data-tab="sales-activity"><i class="ti ti-chart-line"></i><span>Hoạt động
@@ -86,6 +83,10 @@
           <button class="btn btn-icon d-lg-none" id="btn-menu-toggle"><i class="ti ti-menu-2"></i></button>
           <div class="topbar-title" id="page-title">Tổng quan</div>
           <div class="topbar-spacer"></div>
+          <div class="sync-status sync-idle d-none" id="sync-status-widget" title="Trạng thái đồng bộ">
+            <i class="ti ti-cloud-check"></i>
+            <span id="sync-status-text">Đã đồng bộ</span>
+          </div>
           <button class="btn btn-icon" id="btn-refresh-all" title="Làm mới dữ liệu"><i
               class="ti ti-refresh"></i></button>
           <button class="btn btn-icon btn-bell" id="btn-notifications" title="Nhắc nhở follow up">
@@ -199,33 +200,6 @@
           </section>
 
           <!-- TAB: THÊM BÁO GIÁ -->
-          <!-- TAB: KHÁCH HÀNG -->
-          <section id="tab-customers" class="tab-panel d-none">
-            <div class="row mb-3">
-              <div class="col-12 col-md-4">
-                <input type="text" id="filter-customer-name" class="form-control" placeholder="Tìm kiếm khách hàng...">
-              </div>
-            </div>
-            <div class="panel">
-              <div class="table-responsive">
-                <table class="table" id="customer-table">
-                  <thead>
-                    <tr>
-                      <th>Mã số thuế</th>
-                      <th>Tên khách hàng</th>
-                      <th>Tên công ty</th>
-                      <th>Số điện thoại</th>
-                      <th>Email</th>
-                      <th>Ghi chú quan trọng</th>
-                      <th>Ngày cập nhật</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody id="customer-list-tbody"></tbody>
-                </table>
-              </div>
-            </div>
-          </section>
 
           <section id="tab-add" class="tab-panel d-none">
             <div class="panel form-panel">
@@ -269,8 +243,11 @@
                 </div>
                 <div class="col-md-6" id="wrapper-customer-old-name" style="display: none;">
                   <label class="form-label">Tên khách hàng</label>
-                  <input type="text" class="form-control" id="display-old-customer-name" readonly
-                    placeholder="Tự động điền khi chọn công ty/khách hàng cũ ở trên">
+                  <input type="text" class="form-control" name="customerContactNameOld" id="display-old-customer-name"
+                    readonly placeholder="Tự động điền khi chọn công ty/khách hàng cũ ở trên">
+                  <div class="form-text" id="old-customer-name-editable-hint" style="display:none;">
+                    Khách hàng mới — bạn có thể sửa lại đúng tên người liên hệ ở đây.
+                  </div>
                 </div>
                 <div class="col-md-6" id="wrapper-customer-taxcode">
                   <label class="form-label">Mã số thuế (Mã khách hàng)</label>
@@ -333,7 +310,7 @@
             </div>
           </section>
 
-          <!-- TAB: DANH SÁCH & FOLLOW UP -->
+          <!-- TAB: DANH SÁCH -->
           <section id="tab-list" class="tab-panel d-none">
             <div class="panel">
               <div class="list-toolbar flex-column flex-md-row align-items-start align-items-md-center">
@@ -346,7 +323,7 @@
                     <button type="button" class="seg-btn" data-period="month">Tháng này</button>
                   </div>
                   <input type="text" id="search-box" class="form-control form-control-sm"
-                    placeholder="Tìm theo tên khách hàng...">
+                    placeholder="Tìm theo tên khách hàng / công ty...">
                   <input type="text" id="search-product-box" class="form-control form-control-sm"
                     placeholder="🔍 Tìm theo tên sản phẩm...">
                 </div>
@@ -355,14 +332,14 @@
                 <table class="table align-middle table-hover" id="project-table">
                   <thead>
                     <tr>
-                      <th>Công ty/Khách hàng</th>
+                      <th>Tên công ty</th>
+                      <th>Tên khách hàng</th>
+                      <th>Link drive</th>
                       <th>Sales</th>
                       <th>Giá trị đơn</th>
                       <th>Trạng thái</th>
-                      <th>Xác suất</th>
-                      <th>Doanh thu kỳ vọng</th>
                       <th>Follow up</th>
-                      <th>Ngày follow up</th>
+                      <th>Ghi chú</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -761,6 +738,7 @@
   <script src="js/api.js"></script>
   <script src="js/periods.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="js/syncQueue.js"></script>
   <script src="js/projects.js"></script>
   <script src="js/reports.js"></script>
   <script src="js/customers.js"></script>
