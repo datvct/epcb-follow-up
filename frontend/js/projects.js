@@ -193,6 +193,28 @@ async function loadProjectList() {
 }
 
 let CURRENT_LIST_PERIOD = "week";
+let CURRENT_AMOUNT_SORT = null; // null | "asc" | "desc"
+let CURRENT_FOLLOWUP_SORT = null; // null | "asc" | "desc"
+
+document.getElementById("sort-amount-btn").addEventListener("click", function () {
+  if (CURRENT_AMOUNT_SORT === null) CURRENT_AMOUNT_SORT = "desc";
+  else if (CURRENT_AMOUNT_SORT === "desc") CURRENT_AMOUNT_SORT = "asc";
+  else CURRENT_AMOUNT_SORT = null;
+  const icon = this.querySelector("i");
+  icon.className = CURRENT_AMOUNT_SORT === "desc" ? "ti ti-arrow-down" : CURRENT_AMOUNT_SORT === "asc" ? "ti ti-arrow-up" : "ti ti-arrows-sort";
+  this.title = CURRENT_AMOUNT_SORT === "desc" ? "Đang giảm dần — bấm để chuyển tăng dần" : CURRENT_AMOUNT_SORT === "asc" ? "Đang tăng dần — bấm để tắt sắp xếp" : "Sắp xếp theo giá trị đơn";
+  applyListFilters();
+});
+
+document.getElementById("sort-followup-btn").addEventListener("click", function () {
+  if (CURRENT_FOLLOWUP_SORT === null) CURRENT_FOLLOWUP_SORT = "asc";
+  else if (CURRENT_FOLLOWUP_SORT === "asc") CURRENT_FOLLOWUP_SORT = "desc";
+  else CURRENT_FOLLOWUP_SORT = null;
+  const icon = this.querySelector("i");
+  icon.className = CURRENT_FOLLOWUP_SORT === "asc" ? "ti ti-arrow-up" : CURRENT_FOLLOWUP_SORT === "desc" ? "ti ti-arrow-down" : "ti ti-arrows-sort";
+  this.title = CURRENT_FOLLOWUP_SORT === "asc" ? "Đang tăng dần — bấm để chuyển giảm dần" : CURRENT_FOLLOWUP_SORT === "desc" ? "Đang giảm dần — bấm để tắt sắp xếp" : "Sắp xếp theo ngày follow up";
+  applyListFilters();
+});
 
 function applyListFilters() {
   const period = CURRENT_LIST_PERIOD;
@@ -210,6 +232,20 @@ function applyListFilters() {
     );
   if (qp)
     rows = rows.filter((r) => (r.productName || "").toLowerCase().includes(qp));
+  if (CURRENT_AMOUNT_SORT) {
+    rows.sort((a, b) => {
+      const va = Number(a.amount) || 0;
+      const vb = Number(b.amount) || 0;
+      return CURRENT_AMOUNT_SORT === "asc" ? va - vb : vb - va;
+    });
+  }
+  if (CURRENT_FOLLOWUP_SORT) {
+    rows.sort((a, b) => {
+      const da = a.nextFollowUpDate ? new Date(a.nextFollowUpDate).getTime() : Infinity;
+      const db = b.nextFollowUpDate ? new Date(b.nextFollowUpDate).getTime() : Infinity;
+      return CURRENT_FOLLOWUP_SORT === "asc" ? da - db : db - da;
+    });
+  }
   renderProjectTable(rows);
   document.getElementById("list-count-label").textContent =
     rows.length + " / " + ALL_PROJECTS.length + " báo giá";

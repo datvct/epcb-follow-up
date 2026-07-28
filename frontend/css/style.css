@@ -859,6 +859,11 @@ body {
   background: #f8fafc;
 }
 
+#sort-amount-btn { vertical-align: baseline; }
+#sort-amount-btn:hover,
+#sort-followup-btn:hover { color: var(--accent) !important; }
+#sort-followup-btn { vertical-align: baseline; }
+
 #project-tbody tr {
   transition: var(--transition);
 }

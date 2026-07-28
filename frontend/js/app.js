@@ -219,7 +219,8 @@ async function init() {
   try {
     FORM_OPTIONS = await callApi('getFormOptions');
     fillSelect(document.querySelector('[name="source"]'), FORM_OPTIONS.source);
-    fillSelect(document.querySelector('[name="customerType"]'), FORM_OPTIONS.customerType);
+    fillSelect(document.querySelector('[name="customerType"]'), (FORM_OPTIONS.customerType || []).filter(v => v !== "Khách mới").sort((a, b) => a === "Khách quan tâm" ? -1 : b === "Khách quan tâm" ? 1 : 0));
+    document.querySelector('[name="customerType"]').dispatchEvent(new Event("change"));
     fillSelect(document.querySelector('[name="currentStatus"]'), FORM_OPTIONS.currentStatus);
     fillSelect(document.getElementById('select-customer-segment'), FORM_OPTIONS.customerSegment);
     fillSelect(document.getElementById('update-customer-segment'), FORM_OPTIONS.customerSegment);
