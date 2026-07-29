@@ -28,7 +28,7 @@ let _callbackCounter = 0;
 // dữ liệu thông thường. Dùng timeout dài hơn riêng cho các action này để
 // tránh báo lỗi/timeout ở phía trình duyệt trong khi Apps Script vẫn đang
 // chạy (và vẫn sẽ lưu thành công) ở phía server.
-const SLOW_ACTIONS_ = ['createProject', 'updateProject', 'reparseProjectQuoteFile'];
+const SLOW_ACTIONS_ = ['createProject', 'updateProject', 'deleteProject', 'reparseProjectQuoteFile'];
 const DEFAULT_TIMEOUT_MS_ = 20000;
 const SLOW_TIMEOUT_MS_ = 60000;
 

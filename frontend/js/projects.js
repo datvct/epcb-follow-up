@@ -660,24 +660,52 @@ document
     const formData = new FormData(e.target);
     const form = Object.fromEntries(formData.entries());
 
-    // Nhóm khách hàng là multi-select — Object.fromEntries chỉ giữ giá trị
-    // cuối cùng nên phải gom lại bằng getAll() giống form Thêm báo giá.
     const selectedSegments = formData.getAll("customerType2");
     form.customerType2 = selectedSegments.join(", ");
 
     const projectId = form.projectId;
     delete form.projectId;
-    showLoading(true);
-    try {
-      await callApi("updateProject", { projectId: projectId, form: form });
-      toast("Đã lưu thay đổi.");
-      updateModal().hide();
-      await reloadAll();
-    } catch (err) {
-      toast("Lỗi: " + err.message, "danger");
-    } finally {
-      showLoading(false);
-    }
+
+    const originalProject = ALL_PROJECTS.find(function (p) { return p.quoteId === projectId; });
+    if (!originalProject) return;
+    const originalData = Object.assign({}, originalProject);
+
+    originalProject.currentStatus = form.currentStatus;
+    originalProject.finalStatus = form.finalStatus;
+    originalProject.nextFollowUpDate = form.nextFollowUpDate || '';
+    originalProject.note = form.note || '';
+    originalProject.productFile = form.productFile || '';
+    originalProject.customerType2 = form.customerType2 || '';
+    originalProject._pendingSync = true;
+    originalProject._syncError = false;
+
+    applyListFilters();
+    refreshDashboard();
+    updateModal().hide();
+    toast("Đã lưu thay đổi — đang đồng bộ lên máy chủ...");
+
+    SyncQueue.enqueue({
+      tempId: projectId,
+      action: 'updateProject',
+      payload: { projectId: projectId, form: form },
+      onSuccess: function (_res) {
+        const p = ALL_PROJECTS.find(function (x) { return x.quoteId === projectId; });
+        if (p) {
+          delete p._pendingSync;
+          delete p._syncError;
+        }
+        toast('Đã đồng bộ thay đổi lên máy chủ.');
+      },
+      onError: function (err) {
+        const p = ALL_PROJECTS.find(function (x) { return x.quoteId === projectId; });
+        if (p) {
+          Object.assign(p, originalData);
+          p._pendingSync = false;
+          p._syncError = true;
+        }
+        applyListFilters();
+      }
+    });
   });
 
 document
@@ -688,17 +716,36 @@ document
     ).value;
     if (!projectId) return;
     if (!confirm("Xoá báo giá này? Không thể hoàn tác.")) return;
-    showLoading(true);
-    try {
-      await callApi("deleteProject", { projectId: projectId });
-      toast("Đã xoá báo giá.");
-      updateModal().hide();
-      await reloadAll();
-    } catch (err) {
-      toast("Lỗi: " + err.message, "danger");
-    } finally {
-      showLoading(false);
-    }
+
+    const deletedProject = ALL_PROJECTS.find(function (p) { return p.quoteId === projectId; });
+    const deletedData = deletedProject ? Object.assign({}, deletedProject) : null;
+
+    // Xoá ngay khỏi danh sách
+    const idx = ALL_PROJECTS.findIndex(function (p) { return p.quoteId === projectId; });
+    if (idx !== -1) ALL_PROJECTS.splice(idx, 1);
+    applyListFilters();
+    refreshDashboard();
+    updateModal().hide();
+    toast("Đã xoá báo giá — đang đồng bộ lên máy chủ...");
+
+    SyncQueue.enqueue({
+      tempId: projectId,
+      action: 'deleteProject',
+      payload: { projectId: projectId },
+      onSuccess: function (_res) {
+        toast('Đã đồng bộ xoá báo giá lên máy chủ.');
+      },
+      onError: function (err) {
+        // Phục hồi lại báo giá nếu xoá thất bại
+        if (deletedData) {
+          deletedData._syncError = true;
+          delete deletedData._pendingSync;
+          ALL_PROJECTS.push(deletedData);
+        }
+        applyListFilters();
+        toast('Lỗi đồng bộ xoá báo giá: dữ liệu đã được khôi phục.', 'warning');
+      }
+    });
   });
 
 // ============================================================

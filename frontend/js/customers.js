@@ -15,26 +15,47 @@ document.addEventListener("DOMContentLoaded", () => {
     formUpdateCustomer.addEventListener("submit", async (e) => {
       e.preventDefault();
       const form = Object.fromEntries(new FormData(e.target).entries());
-      const btn =
-        document.querySelector(
-          'button[type="submit"][form="form-update-customer"]',
-        ) || formUpdateCustomer.querySelector('button[type="submit"]');
-      const originalText = btn.innerHTML;
 
-      try {
-        btn.innerHTML = '<i class="ti ti-loader ti-spin"></i> Đang lưu...';
-        btn.disabled = true;
+      // Lưu dữ liệu gốc để phục hồi nếu sync lỗi
+      const originalCustomer = ALL_CUSTOMERS.find(function (c) {
+        return String(c.customerId).trim().toLowerCase() === String(form.customerId).trim().toLowerCase();
+      });
+      const originalData = originalCustomer ? Object.assign({}, originalCustomer) : null;
 
-        await callApi("updateCustomer", form);
-        toast("Cập nhật thông tin khách hàng thành công!");
-        modalUpdateCustomer.hide();
-        await reloadAll();
-      } catch (err) {
-        toast("Lỗi: " + err.message, "danger");
-      } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+      // Cập nhật optimistically trong bộ nhớ
+      if (originalCustomer) {
+        originalCustomer.customerName = form.customerName;
+        originalCustomer.companyName = form.companyName || '';
+        originalCustomer.phone = form.phone || '';
+        originalCustomer.email = form.email || '';
+        originalCustomer.note = form.note || '';
+        if (typeof initTomSelect === 'function') initTomSelect();
       }
+
+      modalUpdateCustomer.hide();
+      toast("Đã cập nhật thông tin khách hàng — đang đồng bộ lên máy chủ...");
+
+      SyncQueue.enqueue({
+        tempId: form.customerId,
+        action: 'updateCustomer',
+        payload: form,
+        onSuccess: function (_res) {
+          toast('Đã đồng bộ thông tin khách hàng lên máy chủ.');
+        },
+        onError: function (err) {
+          // Phục hồi dữ liệu gốc
+          if (originalData) {
+            const c = ALL_CUSTOMERS.find(function (x) {
+              return String(x.customerId).trim().toLowerCase() === String(form.customerId).trim().toLowerCase();
+            });
+            if (c) {
+              Object.assign(c, originalData);
+            }
+            if (typeof initTomSelect === 'function') initTomSelect();
+          }
+          toast('Lỗi đồng bộ: ' + err.message + ' — dữ liệu đã được khôi phục.', 'warning');
+        }
+      });
     });
   }
 });
