@@ -581,10 +581,16 @@ document
     ).value;
     if (!projectId) return;
 
+    const row = ALL_PROJECTS.find((r) => r.quoteId === projectId);
+    if (row && (row._pendingSync || row._syncError)) {
+      toast("Báo giá đang đồng bộ hoặc bị lỗi — vui lòng đợi đồng bộ xong rồi follow up.", "warning");
+      return;
+    }
+
     const currentDateVal = document.getElementById(
       "update-next-followup",
     ).value;
-    if (!confirmEarlyFollowUp(currentDateVal)) return;
+    if (!(await confirmEarlyFollowUp(currentDateVal))) return;
 
     // Tự động dời "Ngày follow up tiếp theo" theo nhịp cố định của trạng thái đang chọn
     // (Đang báo giá +3 ngày, Đang đàm phán +5 ngày, Đã đặt cọc +3 ngày, mặc định +3 ngày).
@@ -594,63 +600,137 @@ document
     const nextDate = new Date();
     nextDate.setDate(nextDate.getDate() + cadenceDays);
     const nextDateStr = nextDate.toISOString().slice(0, 10);
+    const note = document.querySelector('#form-update-project [name="note"]')
+      .value;
 
-    showLoading(true);
-    try {
-      await callApi("markFollowUp", {
+    // ——— OPTIMISTIC UI: tăng count +1, dời ngày hẹn ngay trên bộ nhớ + modal ———
+    const originalFollowUp = (row && Number(row.followUp)) || 0;
+    const originalNextFollowUpDate = row ? row.nextFollowUpDate : "";
+    if (row) {
+      row.followUp = originalFollowUp + 1;
+      row.nextFollowUpDate = nextDateStr;
+      if (note) row.note = note;
+      row._pendingSync = true;
+      row._syncError = false;
+    }
+    document.getElementById("update-next-followup").value = nextDateStr;
+    document.getElementById("update-cadence-hint").textContent = "";
+    document.getElementById("update-followup-count").textContent = row
+      ? row.followUp
+      : originalFollowUp + 1;
+
+    applyListFilters();
+    refreshDashboard();
+
+    toast(
+      "Đã ghi nhận follow up (+1) — hẹn tiếp theo ngày " +
+      nextDateStr.split("-").reverse().join("/") +
+      ". Đang đồng bộ lên máy chủ...",
+    );
+
+    // Gửi lên máy chủ ở nền (background) qua hàng đợi đồng bộ.
+    SyncQueue.enqueue({
+      tempId: projectId,
+      action: "markFollowUp",
+      payload: {
         projectId: projectId,
         nextFollowUpDate: nextDateStr,
-        note: document.querySelector('#form-update-project [name="note"]')
-          .value,
-      });
-      toast(
-        "Đã ghi nhận follow up — tự động dời hẹn tiếp theo sang " +
-        nextDateStr.split("-").reverse().join("/") +
-        ".",
-      );
-      document.getElementById("update-next-followup").value = nextDateStr;
-      document.getElementById("update-cadence-hint").textContent = "";
-      await reloadAll();
-      const count = document.getElementById("update-followup-count");
-      count.textContent = Number(count.textContent) + 1;
-    } catch (err) {
-      toast("Lỗi: " + err.message, "danger");
-    } finally {
-      showLoading(false);
-    }
+        note: note,
+      },
+      onSuccess: function (_res) {
+        const p = ALL_PROJECTS.find(function (x) {
+          return x.quoteId === projectId;
+        });
+        if (p) {
+          delete p._pendingSync;
+          delete p._syncError;
+        }
+        toast("Đã đồng bộ follow up lên máy chủ.");
+      },
+      onError: function (err) {
+        // Hoàn tác +1 và ngày hẹn nếu đồng bộ thất bại, đánh dấu lỗi để user bấm thử lại.
+        const p = ALL_PROJECTS.find(function (x) {
+          return x.quoteId === projectId;
+        });
+        if (p) {
+          p.followUp = originalFollowUp;
+          p.nextFollowUpDate = originalNextFollowUpDate;
+          p._pendingSync = false;
+          p._syncError = true;
+        }
+        document.getElementById("update-followup-count").textContent =
+          originalFollowUp;
+        applyListFilters();
+        refreshDashboard();
+      },
+    });
   });
 
 // Follow up nhanh 1-chạm ngay trong danh sách nhắc nhở, không cần mở modal.
+// UI cập nhật ngay lập tức (optimistic), rồi gửi lên máy chủ ở nền qua
+// SyncQueue — không chặn thao tác của người dùng.
 async function quickFollowUp(projectId) {
   const row = ALL_PROJECTS.find((r) => r.quoteId === projectId);
-  if (row && !confirmEarlyFollowUp(row.nextFollowUpDate)) return;
+  if (!row) return;
+  if (row._pendingSync || row._syncError) {
+    toast("Báo giá đang đồng bộ hoặc bị lỗi — vui lòng đợi đồng bộ xong rồi follow up.", "warning");
+    return;
+  }
+  if (!(await confirmEarlyFollowUp(row.nextFollowUpDate))) return;
 
-  const cadenceDays = row
-    ? ((FORM_OPTIONS && FORM_OPTIONS.followUpCadence) || {})[
-    row.currentStatus
-    ] || 3
-    : 3;
+  // Tự động dời "Ngày follow up tiếp theo" theo nhịp cố định của trạng thái đang chọn.
+  const cadenceDays =
+    ((FORM_OPTIONS && FORM_OPTIONS.followUpCadence) || {})[
+      row.currentStatus
+    ] || 3;
   const nextDate = new Date();
   nextDate.setDate(nextDate.getDate() + cadenceDays);
   const nextDateStr = nextDate.toISOString().slice(0, 10);
 
-  showLoading(true);
-  try {
-    await callApi("markFollowUp", {
-      projectId: projectId,
-      nextFollowUpDate: nextDateStr,
-    });
-    toast(
-      "Đã ghi nhận follow up — hẹn tiếp theo ngày " +
-      nextDateStr.split("-").reverse().join("/") +
-      ".",
-    );
-    await reloadAll();
-  } catch (err) {
-    toast("Lỗi: " + err.message, "danger");
-  } finally {
-    showLoading(false);
-  }
+  // ——— OPTIMISTIC UI: tăng count +1 và dời ngày hẹn ngay trên bộ nhớ, render tức thì ———
+  row.followUp = (Number(row.followUp) || 0) + 1;
+  row.nextFollowUpDate = nextDateStr;
+  row._pendingSync = true;
+  row._syncError = false;
+
+  applyListFilters();
+  refreshDashboard();
+
+  toast(
+    "Đã ghi nhận follow up (+1) — hẹn tiếp theo ngày " +
+    nextDateStr.split("-").reverse().join("/") +
+    ". Đang đồng bộ lên máy chủ...",
+  );
+
+  // Gửi lên máy chủ ở nền (background) qua hàng đợi đồng bộ.
+  SyncQueue.enqueue({
+    tempId: projectId,
+    action: "markFollowUp",
+    payload: { projectId: projectId, nextFollowUpDate: nextDateStr },
+    onSuccess: function (_res) {
+      const p = ALL_PROJECTS.find(function (x) {
+        return x.quoteId === projectId;
+      });
+      if (p) {
+        delete p._pendingSync;
+        delete p._syncError;
+      }
+      toast("Đã đồng bộ follow up lên máy chủ.");
+    },
+    onError: function (err) {
+      // Hoàn tác +1 nếu đồng bộ thất bại, đánh dấu lỗi để user bấm thử lại.
+      const p = ALL_PROJECTS.find(function (x) {
+        return x.quoteId === projectId;
+      });
+      if (p) {
+        p.followUp = Math.max(0, (Number(p.followUp) || 0) - 1);
+        p._pendingSync = false;
+        p._syncError = true;
+      }
+      applyListFilters();
+      refreshDashboard();
+    },
+  });
 }
 
 document

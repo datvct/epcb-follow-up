@@ -731,6 +731,31 @@
     </div>
   </div>
 
+  <!-- MODAL: XÁC NHẬN FOLLOW UP SỚM (thay cho hộp thoại confirm của trình duyệt) -->
+  <div class="modal fade" id="confirm-followup-modal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 460px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="ti ti-alert-triangle text-warning"></i> Xác nhận follow up sớm</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex align-items-start gap-3">
+            <i class="ti ti-phone-outgoing" style="font-size:2rem; color:#f59e0b; flex-shrink:0; margin-top:2px;"></i>
+            <div>
+              <div class="fw-semibold mb-1">Bạn chưa tới ngày hẹn follow up</div>
+              <div class="text-muted small" id="confirm-followup-msg"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" id="btn-confirm-followup-cancel">Huỷ</button>
+          <button type="button" class="btn btn-brand" id="btn-confirm-followup-ok"><i class="ti ti-check"></i> Vẫn ghi nhận follow up</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>

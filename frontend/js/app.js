@@ -89,17 +89,51 @@ function applyReasonRequiredHint(statusValue, labelEl, textareaEl) {
   if (textareaEl) textareaEl.toggleAttribute('required', isRequired);
 }
 
-// Chặn bấm nhầm "Đã follow up": nếu ngày hẹn follow up chưa tới, hỏi lại trước khi
-// cho ghi nhận (đã tới hạn/quá hạn thì cho làm luôn, không hỏi).
+// Chặn bấm nhầm "Đã follow up": nếu ngày hẹn follow up chưa tới, hỏi lại bằng
+// modal xác nhận (thay cho confirm của trình duyệt) trước khi cho ghi nhận
+// (đã tới hạn/quá hạn thì cho làm luôn, không hỏi).
+// Trả về Promise<boolean> vì trả lời từ modal là bất đồng bộ.
+let _confirmFollowUpResolver = null;
 function confirmEarlyFollowUp(nextFollowUpDateStr) {
-  if (!nextFollowUpDateStr) return true; // chưa có hẹn thì cho follow up bất cứ lúc nào
-  const today = startOfDay_(new Date());
-  const due = startOfDay_(new Date(nextFollowUpDateStr));
-  const daysLeft = Math.round((due - today) / 86400000);
-  if (daysLeft <= 0) return true;
-  return confirm('Chưa tới ngày hẹn follow up (còn ' + daysLeft + ' ngày, hẹn ngày ' +
-    nextFollowUpDateStr.split('-').reverse().join('/') + '). Bạn có chắc đã liên hệ khách và muốn ghi nhận follow up sớm không?');
+  return new Promise((resolve) => {
+    if (!nextFollowUpDateStr) return resolve(true); // chưa có hẹn thì cho follow up bất cứ lúc nào
+    const today = startOfDay_(new Date());
+    const due = startOfDay_(new Date(nextFollowUpDateStr));
+    const daysLeft = Math.round((due - today) / 86400000);
+    if (daysLeft <= 0) return resolve(true);
+
+    document.getElementById('confirm-followup-msg').textContent =
+      'Còn ' + daysLeft + ' ngày nữa mới tới hẹn (ngày ' +
+      nextFollowUpDateStr.split('-').reverse().join('/') +
+      '). Bạn có chắc đã liên hệ khách và muốn ghi nhận follow up sớm không?';
+    _confirmFollowUpResolver = resolve;
+    new bootstrap.Modal(document.getElementById('confirm-followup-modal'), {
+      backdrop: 'static',
+    }).show();
+  });
 }
+
+// Gắn sự kiện cho modal xác nhận follow up sớm (chạy 1 lần).
+(function wireConfirmFollowUpModal() {
+  const modalEl = document.getElementById('confirm-followup-modal');
+  if (!modalEl) return;
+
+  const finish = (result) => {
+    if (_confirmFollowUpResolver) _confirmFollowUpResolver(result);
+    _confirmFollowUpResolver = null;
+    const inst = bootstrap.Modal.getInstance(modalEl);
+    if (inst) inst.hide();
+  };
+  document.getElementById('btn-confirm-followup-ok').addEventListener('click', () => finish(true));
+  document.getElementById('btn-confirm-followup-cancel').addEventListener('click', () => finish(false));
+  // Đóng bằng X / phím ESC / bấm nền → coi như huỷ.
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    if (_confirmFollowUpResolver) {
+      _confirmFollowUpResolver(false);
+      _confirmFollowUpResolver = null;
+    }
+  });
+})();
 
 function fillSelect(select, options, placeholder) {
   select.innerHTML = '';
