@@ -386,35 +386,48 @@ function openUpdateModal(projectId) {
     document.getElementById("update-note"),
   );
 
-  // Hiển thị tên khách hàng + tên công ty (nếu có) ngay đầu modal, và ghi
-  // chú quan trọng của khách hàng (nếu có) — tra theo customerName trong
-  // danh sách ALL_CUSTOMERS vì tên công ty chỉ lưu ở sheet "Customers".
+  // Hiển thị tên công ty + tên khách hàng liên hệ + ghi chú quan trọng ngay
+  // đầu modal. Tra hồ sơ khách hàng trong ALL_CUSTOMERS theo: tên công ty
+  // (companyName), tên người liên hệ (customerContactName), hoặc tên khách
+  // hàng (customerName) — vì cột "Tên khách hàng/công ty" trên Projects lưu
+  // TÊN CÔNG TY, còn sheet "Customers" lưu customerName (người liên hệ) và
+  // companyName riêng.
+  const rowCompany = String(row.customerName || "").trim().toLowerCase();
+  const rowContact = String(row.customerContactName || "").trim().toLowerCase();
   const customer = (
     typeof ALL_CUSTOMERS !== "undefined" ? ALL_CUSTOMERS : []
-  ).find(
-    (c) =>
-      String(c.customerName).trim().toLowerCase() ===
-      String(row.customerName || "")
-        .trim()
-        .toLowerCase(),
-  );
+  ).find((c) => {
+    const cCompany = String(c.companyName || "").trim().toLowerCase();
+    const cName = String(c.customerName || "").trim().toLowerCase();
+    return (cCompany && cCompany === rowCompany) || (cName && cName === rowContact) || (cName && cName === rowCompany);
+  });
 
-  const nameEl = document.getElementById("update-modal-customer-name");
-  if (nameEl) nameEl.textContent = row.customerName || "";
+  const companyEl = document.getElementById("update-modal-company-name");
+  if (companyEl) companyEl.textContent = row.customerName || "—";
 
-  const companyBox = document.getElementById("update-modal-company-name");
-  const companyText = document.getElementById("update-modal-company-name-text");
-  if (companyBox && companyText) {
-    if (
-      customer &&
-      customer.companyName &&
-      String(customer.companyName).trim()
-    ) {
-      companyText.textContent = customer.companyName;
-      companyBox.style.display = "block";
+  // Dòng thứ hai: tên khách hàng liên hệ + số điện thoại + email (nếu có).
+  // Luôn hiển thị với icon user ở đầu; nếu không có tên khách hàng thì "—".
+  // Lấy tên người liên hệ từ row.customerContactName, còn số điện thoại &
+  // email tra trong hồ sơ khách hàng (ALL_CUSTOMERS).
+  const contactLine = document.getElementById("update-modal-contact-line");
+  if (contactLine) {
+    const contact = String(row.customerContactName || "").trim();
+    const phone = customer && customer.phone ? String(customer.phone).trim() : "";
+    const email = customer && customer.email ? String(customer.email).trim() : "";
+    let html = '<i class="ti ti-user text-muted"></i> ';
+    if (contact) {
+      html += '<b>' + escapeHtml_(contact) + '</b>';
     } else {
-      companyBox.style.display = "none";
+      html += '<span class="text-muted">—</span>';
     }
+    if (phone) {
+      html += ' <span class="text-muted mx-1">·</span> <i class="ti ti-phone"></i> ' + escapeHtml_(phone);
+    }
+    if (email) {
+      html += ' <span class="text-muted mx-1">·</span> <i class="ti ti-mail"></i> ' + escapeHtml_(email);
+    }
+    contactLine.innerHTML = html;
+    contactLine.style.display = "flex";
   }
 
   // Nhóm khách hàng — dữ liệu lưu dạng 1 chuỗi nối bởi ", " (VD: "SI, OEM"),

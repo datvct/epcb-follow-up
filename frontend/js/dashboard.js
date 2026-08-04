@@ -149,8 +149,11 @@ function renderReminders() {
       <div class="reminder-item ${r.urgency}" onclick="openUpdateModal('${r.quoteId}')">
         <div>
           <div class="name d-flex align-items-center flex-wrap">
-            ${r.customerName}
+            <i class="ti ti-building text-muted me-1"></i>${r.customerName || '—'}
             ${fileLinkHtml}
+          </div>
+          <div class="meta d-flex align-items-center flex-wrap gap-1">
+            <span class="d-inline-flex align-items-center gap-1"><i class="ti ti-user"></i><b>${r.customerContactName || '—'}</b></span>
           </div>
           <div class="meta">${r.sales || ''} · ${r.currentStatus || ''} · ${formatVND(r.amount)}</div>
         </div>
