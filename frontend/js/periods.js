@@ -68,8 +68,9 @@ function filterByPeriod(rows, periodKey) {
 
 // Tính KPI tổng hợp cho 1 tập báo giá — logic khớp getDashboardData() ở backend/Dashboard.gs
 function computeKPIs(rows) {
-  const totalOpportunity = rows.reduce(function (s, r) { return s + Number(r.amount || 0); }, 0);
-  const expectedRevenue = rows.reduce(function (s, r) { return s + Number(r.expectedRevenue || 0); }, 0);
+  const activeRows = rows.filter(function (r) { return r.finalStatus !== 'Không còn nhu cầu'; });
+  const totalOpportunity = activeRows.reduce(function (s, r) { return s + Number(r.amount || 0); }, 0);
+  const expectedRevenue = activeRows.reduce(function (s, r) { return s + Number(r.expectedRevenue || 0); }, 0);
   const closedRevenue = rows
     .filter(function (r) { return CLOSED_STATUSES.indexOf(r.finalStatus) > -1; })
     .reduce(function (s, r) { return s + Number(r.amount || 0); }, 0);
