@@ -260,7 +260,7 @@ async function init() {
     fillSelect(document.getElementById('update-customer-segment'), FORM_OPTIONS.customerSegment);
     fillSelect(document.getElementById('select-sales'), FORM_OPTIONS.sales, 'Chọn người phụ trách...');
     fillSelect(document.getElementById('update-current-status'), FORM_OPTIONS.currentStatus);
-    fillSelect(document.getElementById('update-final-status'), FORM_OPTIONS.finalStatus, 'Chưa kết thúc');
+    fillSelect(document.getElementById('update-final-status'), (FORM_OPTIONS.finalStatus || []).filter(v => v !== 'Không chốt'), 'Chưa kết thúc');
     document.querySelector('[name="quoteDate"]').value = new Date().toISOString().slice(0, 10);
     if (typeof initSegmentTomSelect === 'function') initSegmentTomSelect();
     if (typeof initUpdateSegmentTomSelect === 'function') initUpdateSegmentTomSelect();

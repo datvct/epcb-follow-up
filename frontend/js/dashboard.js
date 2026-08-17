@@ -77,6 +77,7 @@ function renderHotList() {
         <div>
           <div class="name">${r.customerName}</div>
           <div class="meta">${r.sales || ''} · ${r.currentStatus || ''} · ${formatVND(r.amount)}</div>
+          <div class="meta"><i class="ti ti-phone-outgoing"></i> ${r.followUp || 0} lần</div>
         </div>
         <div class="reminder-actions">
           <span class="reminder-badge normal">${formatPercent(r.probability)}</span>
@@ -156,6 +157,7 @@ function renderReminders() {
             <span class="d-inline-flex align-items-center gap-1"><i class="ti ti-user"></i><b>${r.customerContactName || '—'}</b></span>
           </div>
           <div class="meta">${r.sales || ''} · ${r.currentStatus || ''} · ${formatVND(r.amount)}</div>
+          <div class="meta"><i class="ti ti-phone-outgoing"></i> ${r.followUp || 0} lần</div>
         </div>
         <div class="reminder-actions">
           <span class="reminder-badge ${r.urgency}">${label}</span>
